@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Media;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Windows.Forms;
 using WMPLib;
 
@@ -20,93 +21,21 @@ namespace MusicTimer
 
         string folder;
 
-        /// <summary>
-        /// Создание дерева каталогов.
-        /// </summary>
-        /// <param name="Dir">Начальная папка.</param>
-        /// <param name="Sub">Искать в подпапках.</param>
-        /// <param name="Ws">Поток куда записывать дерево.</param>
-        /// <param name="Level">Уровень вложенности (не используется).</param>
-        /// <returns>Возвращает True, если начальная папка существует, иначе False.</returns>
-        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode, Pack = 1)]
-        struct WIN32_FIND_DATA
+public class MusicID3Tag  
         {
-            public uint dwFileAttributes;
-            public long ftCreationTime;
-            public long ftLastAccessTime;
-            public long ftLastWriteTime;
-            public uint nFileSizeHigh;
-            public uint nFileSizeLow;
-            private uint dwReserved0;
-            private uint dwReserved1;
-            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 260)]
-            public string cFileName;
-            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 14)]
-            public string cAlternateFileName;
-        }
+ 
+            public byte[] TAGID = new byte[3];      //  3
+        public byte[] Title = new byte[30];     //  30
+        /*public byte[] Artist = new byte[30];    //  30 
+        public byte[] Album = new byte[30];     //  30 
+        public byte[] Year = new byte[4];       //  4 
+        public byte[] Comment = new byte[28];   //  30 
+        public byte[] Genre = new byte[1];      //  1
+        public byte[] Bitrate = new byte[1];
+        public byte[] Duration = new byte[1];*/
+    }
 
-        private const string KERNEL32 = "kernel32.dll";
-
-        [DllImport(KERNEL32, SetLastError = true, CharSet = CharSet.Unicode)]
-        static extern IntPtr FindFirstFile(
-            string lpFileName,
-            ref WIN32_FIND_DATA lpFindFileData
-            );
-
-        [DllImport(KERNEL32, SetLastError = true, CharSet = CharSet.Unicode)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        static extern bool FindNextFile(
-            IntPtr hFindFile,
-            out WIN32_FIND_DATA lpFindFileData
-            );
-
-        [DllImport(KERNEL32, SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        static extern bool FindClose(
-            IntPtr hFindFile
-            );
-
-        static List<string> CreateTree(string Dir, bool SubDir)
-        {
-            const string unicode_version = @"\\?\";
-
-            var stack = new Stack<string>();
-            var list = new List<string>();
-            var wfd = new WIN32_FIND_DATA();
-            IntPtr hFile;
-
-            stack.Push(Dir);
-
-            do
-            {
-                string path;
-
-                do
-                {
-                    list.Add(Dir = stack.Pop());
-                    path = unicode_version + Path.Combine(Dir, "*");
-                    hFile = FindFirstFile(path, ref wfd);
-                } while (hFile == (IntPtr)(-1));
-
-                do
-                {
-                    if (wfd.cFileName == "." || wfd.cFileName == "..")
-                        continue;
-
-                    path = Path.Combine(Dir, wfd.cFileName);
-
-                    if ((wfd.dwFileAttributes & 0x10) != 0 && SubDir)
-                        stack.Push(path);
-                    else
-                        list.Add(path);
-                } while (FindNextFile(hFile, out wfd));
-
-                FindClose(hFile);
-            } while (stack.Count != 0);
-
-            return list;
-        }
-        public FormMain()
+    public FormMain()
         {
             InitializeComponent();
             player.Ctlcontrols.stop();
@@ -115,7 +44,6 @@ namespace MusicTimer
 
         private void btnFolder_Click(object sender, EventArgs e)
         {
-            List<string> files = new List<string>();
             IWMPMedia media;
             if (folderBrowserDialog1.ShowDialog() == DialogResult.OK)
             {
@@ -123,23 +51,32 @@ namespace MusicTimer
                 playlist = player.newPlaylist("Playlist", folder);
                 lbMusicName.Text = folder;
                 // читаем папку в строку
-                List<string> folderList = CreateTree(folder, true);
-                foreach (string dir in folderList)
-                {
-                    if (dir.Substring(dir.Length - 4) == ".mp3")
-                    {
-                        files.Add(dir);
-                    }
-                }
-                if (files.Count != 0)
+                String[] files = Directory.GetFiles(folder, "*.mp3*", SearchOption.AllDirectories);
+                if (files.Length != 0)
                 {
                     songList.Items.Clear();
                     songList.ResetText();
-                    for (int i = 0; i < files.Count; i++)
+                    for (int i = 0; i < files.Length; i++)
                     {
-                        int num = files[i].LastIndexOf("\\");
-                        string temp = files[i].Substring(num+1);
-                        songList.Items.Add(temp);
+                        string Title = "";
+                        string filePath = files[i];
+                        using (FileStream fs = File.OpenRead(filePath))
+                        {
+                            if (fs.Length >= 128)
+                            {
+                                MusicID3Tag tag = new MusicID3Tag();
+                                fs.Seek(-128, SeekOrigin.End);
+                                fs.Read(tag.TAGID, 0, tag.TAGID.Length);
+                                fs.Read(tag.Title, 0, tag.Title.Length);
+                                string theTAGID = Encoding.Default.GetString(tag.TAGID);
+                                if (theTAGID.Equals("TAG"))
+                                {
+
+                                    Title = Encoding.Default.GetString(tag.Title);
+                                }
+                            }
+                        }
+                        songList.Items.Add(Title);
                         songList.SelectedIndex = 0;
                     }
                     foreach (string file in files)
@@ -248,13 +185,12 @@ namespace MusicTimer
                 goTimer.Start(); //starts the workout
                 goTimer.Enabled = true;
 
-                //Random rnd = new Random();
-                //int item = rnd.Next(0, playlist.count - 1);
                 int item = 0;
                 for (int i = 0; i < playlist.count; i++)
                 {
-                    int num = songList.Text.LastIndexOf(".");
-                    string temp = songList.Text.Substring(0, num);
+                    string temp = songList.Text;
+                    temp = temp.TrimStart(' ');
+                    temp = temp.TrimEnd(' ');
                     if (playlist.Item[i].name.Equals(temp))
                     {
                         item = i;
@@ -381,45 +317,61 @@ namespace MusicTimer
             }
         }
 
-            private void FormMain_Load(object sender, EventArgs e)
+        private void FormMain_Load(object sender, EventArgs e)
         {
             PrepareTimer.Interval = 1000;
             goTimer.Interval = 1000;
             pauseTimer.Interval = 1000;
             folder = Properties.Settings.Default.folder;
             lbMusicName.Text = Properties.Settings.Default.folder;
+            numStart.Value = Properties.Settings.Default.prepare;
+            numMusic.Value = Properties.Settings.Default.music;
+            numPause.Value = Properties.Settings.Default.pause;
+            numCicles.Value = Properties.Settings.Default.cicles;
+            numRounds.Value = Properties.Settings.Default.rounds;
             if (!folder.Equals("-"))
             {
-                List<string> files = new List<string>();
                 IWMPMedia media;
                 playlist = player.newPlaylist("Playlist", folder);
-                // читаем папку в строку
-                List<string> folderList = CreateTree(folder, true);
-                foreach (string dir in folderList)
+                String[] files = Directory.GetFiles(folder, "*.mp3*", SearchOption.AllDirectories);
+                if (files.Length != 0)
                 {
-                    if (dir.Substring(dir.Length - 4) == ".mp3")
+                    songList.Items.Clear();
+                    songList.ResetText();
+                    for (int i = 0; i < files.Length; i++)
                     {
-                        files.Add(dir);
+                        string Title = "";
+                        string filePath = files[i];
+                        using (FileStream fs = File.OpenRead(filePath))
+                        {
+                            if (fs.Length >= 128)
+                            {
+                                MusicID3Tag tag = new MusicID3Tag();
+                                fs.Seek(-128, SeekOrigin.End);
+                                fs.Read(tag.TAGID, 0, tag.TAGID.Length);
+                                fs.Read(tag.Title, 0, tag.Title.Length);
+                                string theTAGID = Encoding.Default.GetString(tag.TAGID);
+                                if (theTAGID.Equals("TAG"))
+                                {
+
+                                    Title = Encoding.Default.GetString(tag.Title);
+                                }
+                            }
+                        }
+                        songList.Items.Add(Title);
+                        songList.SelectedIndex = 0;
                     }
+                    foreach (string file in files)
+                    {
+                        media = player.newMedia(file);
+                        playlist.appendItem(media);
+                    }
+                    player.currentPlaylist = playlist;
+                    player.Ctlcontrols.stop();
+                    btnStart.Enabled = true;
+                    songList.Enabled = true;
+                    songList.SelectedIndex = Properties.Settings.Default.song;
                 }
-                songList.Items.Clear();
-                songList.ResetText();
-                for (int i = 0; i < files.Count; i++)
-                {
-                    int num = files[i].LastIndexOf("\\");
-                    string temp = files[i].Substring(num + 1);
-                    songList.Items.Add(temp);
-                    songList.SelectedIndex = 0;
-                }
-                foreach (string file in files)
-                {
-                    media = player.newMedia(file);
-                    playlist.appendItem(media);
-                }
-                player.currentPlaylist = playlist;
-                player.Ctlcontrols.stop();
-                btnStart.Enabled = true;
-                songList.Enabled = true;
             }
         }
 
@@ -439,13 +391,21 @@ namespace MusicTimer
                 "Если нужный промежуток занимает больше часа, также укажите время в минутах, например, 1 час 20 минут это 80 минут \n" +
                 "4. Ввести в поля количество раундов и циклов \n" +
                 "5. Нажать на кнопку 'Старт' \n" +
-                "6. Если вы хотите закончить работу раньше времени, нажмите на кнопку 'Стоп'. Она сбросит программу к началу с сохранением выбранного времени, папки и первой песни.";
+                "6. Если вы хотите закончить работу раньше времени, нажмите на кнопку 'Стоп'. Она сбросит программу к началу с сохранением выбранного времени, папки и первой песни. \n" +
+                "7. При загрытии программы сохраняется ее последнее состояние - папка, выбранная песня, значения в полях времени и количества." +
+                "Стартовая песня сохранится правильно только в том случае, если между открытиями программы содержимое выбранной папки не менялось, т.к. она хранится в виде индекса в плейлисте.";
             MessageBox.Show(helpText, "Справка", MessageBoxButtons.OK);
         }
 
         private void FormMain_FormClosing(object sender, FormClosingEventArgs e)
         {
             Properties.Settings.Default.folder = folder;
+            Properties.Settings.Default.song = songList.SelectedIndex;
+            Properties.Settings.Default.prepare = numStart.Value;
+            Properties.Settings.Default.music = numMusic.Value;
+            Properties.Settings.Default.pause = numPause.Value;
+            Properties.Settings.Default.cicles = numCicles.Value;
+            Properties.Settings.Default.rounds = numRounds.Value;
             Properties.Settings.Default.Save();
         }
     }

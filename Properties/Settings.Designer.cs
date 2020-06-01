@@ -34,5 +34,77 @@ namespace MusicTimer.Properties {
                 this["folder"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("1")]
+        public decimal prepare {
+            get {
+                return ((decimal)(this["prepare"]));
+            }
+            set {
+                this["prepare"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("1")]
+        public decimal music {
+            get {
+                return ((decimal)(this["music"]));
+            }
+            set {
+                this["music"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("1")]
+        public decimal pause {
+            get {
+                return ((decimal)(this["pause"]));
+            }
+            set {
+                this["pause"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("1")]
+        public decimal cicles {
+            get {
+                return ((decimal)(this["cicles"]));
+            }
+            set {
+                this["cicles"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("1")]
+        public decimal rounds {
+            get {
+                return ((decimal)(this["rounds"]));
+            }
+            set {
+                this["rounds"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("0")]
+        public int song {
+            get {
+                return ((int)(this["song"]));
+            }
+            set {
+                this["song"] = value;
+            }
+        }
     }
 }
