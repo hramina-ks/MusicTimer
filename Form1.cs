@@ -1,9 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Media;
-using System.Runtime.InteropServices;
-using System.Text;
 using System.Windows.Forms;
 using WMPLib;
 
@@ -20,20 +17,6 @@ namespace MusicTimer
         int tk;
 
         string folder;
-
-public class MusicID3Tag  
-        {
- 
-            public byte[] TAGID = new byte[3];      //  3
-        public byte[] Title = new byte[30];     //  30
-        /*public byte[] Artist = new byte[30];    //  30 
-        public byte[] Album = new byte[30];     //  30 
-        public byte[] Year = new byte[4];       //  4 
-        public byte[] Comment = new byte[28];   //  30 
-        public byte[] Genre = new byte[1];      //  1
-        public byte[] Bitrate = new byte[1];
-        public byte[] Duration = new byte[1];*/
-    }
 
     public FormMain()
         {
@@ -56,34 +39,13 @@ public class MusicID3Tag
                 {
                     songList.Items.Clear();
                     songList.ResetText();
-                    for (int i = 0; i < files.Length; i++)
-                    {
-                        string Title = "";
-                        string filePath = files[i];
-                        using (FileStream fs = File.OpenRead(filePath))
-                        {
-                            if (fs.Length >= 128)
-                            {
-                                MusicID3Tag tag = new MusicID3Tag();
-                                fs.Seek(-128, SeekOrigin.End);
-                                fs.Read(tag.TAGID, 0, tag.TAGID.Length);
-                                fs.Read(tag.Title, 0, tag.Title.Length);
-                                string theTAGID = Encoding.Default.GetString(tag.TAGID);
-                                if (theTAGID.Equals("TAG"))
-                                {
-
-                                    Title = Encoding.Default.GetString(tag.Title);
-                                }
-                            }
-                        }
-                        songList.Items.Add(Title);
-                        songList.SelectedIndex = 0;
-                    }
                     foreach (string file in files)
                     {
                         media = player.newMedia(file);
+                        songList.Items.Add(media.name);
                         playlist.appendItem(media);
                     }
+                    songList.SelectedIndex = 0;
                     player.currentPlaylist = playlist;
                     player.Ctlcontrols.stop();
                     btnStart.Enabled = true;
@@ -338,32 +300,10 @@ public class MusicID3Tag
                 {
                     songList.Items.Clear();
                     songList.ResetText();
-                    for (int i = 0; i < files.Length; i++)
-                    {
-                        string Title = "";
-                        string filePath = files[i];
-                        using (FileStream fs = File.OpenRead(filePath))
-                        {
-                            if (fs.Length >= 128)
-                            {
-                                MusicID3Tag tag = new MusicID3Tag();
-                                fs.Seek(-128, SeekOrigin.End);
-                                fs.Read(tag.TAGID, 0, tag.TAGID.Length);
-                                fs.Read(tag.Title, 0, tag.Title.Length);
-                                string theTAGID = Encoding.Default.GetString(tag.TAGID);
-                                if (theTAGID.Equals("TAG"))
-                                {
-
-                                    Title = Encoding.Default.GetString(tag.Title);
-                                }
-                            }
-                        }
-                        songList.Items.Add(Title);
-                        songList.SelectedIndex = 0;
-                    }
                     foreach (string file in files)
                     {
                         media = player.newMedia(file);
+                        songList.Items.Add(media.name);
                         playlist.appendItem(media);
                     }
                     player.currentPlaylist = playlist;
